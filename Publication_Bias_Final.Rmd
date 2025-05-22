@@ -3,10 +3,10 @@ title: "Publication_Bias_Final"
 author: "Sophie Tascedda"
 date: "2025-05-03"
 output:
+  pdf_document: default
+  html_notebook: default
   html_document:
     df_print: paged
-  html_notebook: default
-  pdf_document: default
 editor_options:
   markdown:
     wrap: 72
@@ -646,6 +646,17 @@ facet_labels <- c(
   "FDA" = "APPROVED MABS"
 )
 
+Q1=0.1
+Q2=0.25
+#Q3=0.3
+Q4=0.4
+
+# Define custom labels for confidence intervals
+R1_label <- paste( Q1 * 100, '%-', (1 - Q1) * 100, '%', sep = '')
+R2_label <- paste( Q2 * 100, '%-', (1 - Q2) * 100, '%', sep = '')
+#R3_label <- paste('Range ', Q3 * 100, '%-', (1 - Q3) * 100, '%', sep = '')
+R4_label <- paste(Q4 * 100, '%-', (1 - Q4) * 100, '%', sep = '')
+
 # Ensure phase_new is a factor with the correct levels
 df_sim_combined_summary$phase_new <- factor(
   df_sim_combined_summary$phase_new,
@@ -838,7 +849,7 @@ gg_combined_app <- ggplot(data = combined_df_app, aes(x = t)) +
     axis.text = element_text(size = 7, face = "bold"),
     axis.title = element_text(size = 8, face = "bold"),
     plot.title = element_text(size = 8, face = "bold"),
-    plot.subtitle = element_text(size = 8, color = "gray38"),
+    plot.subtitle = element_text(size = 6, color = "gray38"),
     legend.text = element_text(size = 6),
     legend.title = element_text(size = 7, face = "bold"),
     legend.position = "bottom",
@@ -876,7 +887,7 @@ ggsave(
   height = 86,
   units = "mm",
   dpi = 400,
-  device = "tiff"    # <<<<<< just put "tiff" here
+  device = "tiff" 
 )
 
 ```
