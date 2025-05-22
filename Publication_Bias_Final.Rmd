@@ -1,0 +1,882 @@
+---
+title: "Publication_Bias_Final"
+author: "Sophie Tascedda"
+date: "2025-05-03"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Distribution fitting and multiple simulations for Published vs In-House data
+
+## 1. Loading and PRe-processing
+
+### 1.1 Loading the necessary libraries and the data
+
+```{r}
+library(readxl)
+library(ggplot2)
+library(tidyverse)
+library(logitnorm)
+library(Cairo)
+```
+
+
+**Instructions:**
+
+For variables 'pathFDA' and 'pathInHouse' substitute your own path to
+the data sheets.
+
+```{r}
+pathFDA<-'y_pub_new2.xlsx'
+pathInHouse<-'Inhouse_ymax_anonym.xlsx'
+y_maxFDA <- read_excel(pathFDA)
+Inhouse_ymax <- read_excel(pathInHouse)
+# Filtering Inhouse_ymax to keep only rows where "Flag" equals 1
+Inhouse_ymax <- Inhouse_ymax %>% filter(Flag == 1)
+```
+
+### 1.2 Restructure the data
+
+For compatibility with the rest of the notebook, both data-sheets need
+to be in the following form:
+
+-   1 variable representing the ADA-positivity rate, called *'ymax'*
+
+-   1 variable with the respective compound name, called *'ID'*.
+
+The following chunk restructures my data to be in this format. If your
+data is already built in excel to follow the required format, this step
+is optional.
+
+Otherwise, fill in the name you gave to your *ymax* and *compound*
+columns in the respective variables and run the chunk.
+
+
+```{r}
+#Skip if it's already 'ymax'
+my_FDA_y_name<-'Conc'
+
+
+#Skip if it's already 'ID'
+my_FDA_comp_name<-'ID'
+
+
+#Skip if it's already 'ymax'
+
+my_InH_y_name<-'clinical_ada_percent'
+
+
+#Skip if it's already 'ID' and'phase'
+my_InH_comp_name<-'molecule'
+my_inH_phase_name<-'latest_phase'
+
+y_maxFDA=y_maxFDA%>%select(my_FDA_comp_name,my_FDA_y_name)%>%
+  rename('ymax'=my_FDA_y_name,'ID'=my_FDA_comp_name)
+y_maxInH=Inhouse_ymax%>%select(my_InH_comp_name,my_InH_y_name,my_inH_phase_name)%>%
+  rename('ymax'=my_InH_y_name,'ID'=my_InH_comp_name,'phase'=my_inH_phase_name)
+y_maxInH$ymax=y_maxInH$ymax/100
+```
+
+Finally, re-group data with regards to Phase:
+```{r}
+unique(y_maxInH$phase)
+y_maxInH$phase_new=y_maxInH$phase
+# Reclassify 'phase_new' variable
+y_maxInH=y_maxInH %>%
+  mutate(phase_new = case_when(
+    phase_new == "PHASE IB" ~ "PHASE I",
+    phase_new == "PHASE I/II" ~ "PHASE II",
+    phase_new == "PHASE IIIB" ~ "PHASE III",
+    TRUE ~ phase_new
+  ))
+```
+
+## 2. Visualizing the distribution of Published ADA-positivity rates for FDA approved compounds VS In-House rates.
+
+### 2.1 Density plot (Publication Figure 1)
+
+Just run the chunk. Don't change/substitute anything.
+
+```{r}
+format_x_axis <- function(x) {
+  ifelse(x %in% c(0, 1), as.character(x), sprintf("%.2f", x))
+}
+
+gg_density <- ggplot() +
+  geom_line(data = y_maxFDA, aes(x = ymax, y = ..density.., color = "FDA"),
+            stat = "density", linewidth = 0.7, adjust = 2) +
+  geom_line(data = y_maxInH, aes(x = ymax, y = ..density.., color = phase_new),
+            stat = "density", linewidth = 0.7, adjust = 2) +
+  facet_wrap(~ phase_new, nrow = 1) +
+  scale_color_manual(
+    values = c("PHASE I" = "darkblue", 
+               "PHASE II" = "blue2", 
+               "PHASE III" = "dodgerblue2",
+               "FDA" = "grey"),
+    labels = c("PHASE I" = "Phase I (in-house)",
+               "PHASE II" = "Phase II (in-house)",
+               "PHASE III" = "Phase III (in-house)",
+               "FDA" = "Approved mAbs [3]")
+  ) +
+  labs(
+    title = "Distribution of ADA-positive ratio for approved mAbs vs. phase-separated in-house compounds",
+    x = "ADA-positive ratio",
+    y = "Density",
+    color = "Legend:"
+  ) +
+  scale_x_continuous(expand = c(0, 0), labels = format_x_axis) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 7,face = "bold"),       
+    axis.text.y = element_text(size = 7,face = "bold"),
+    axis.title = element_text(size = 8,face = "bold"),
+    plot.title = element_text(size = 8, face = "bold"),
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 7, face = "bold"),
+    legend.key.width = unit(0.8, "cm"),
+    strip.text = element_text(size = 7, face = "bold"),
+    panel.spacing = unit(1, "lines"),
+    panel.grid.minor = element_blank(),
+    strip.background = element_rect(color = "black", fill = "white")
+  )
+
+gg_density
+```
+```{r}
+# Adjust your plot layout
+gg_density_final <- gg_density +
+  facet_wrap(~ phase_new, nrow = 1) +  # Force horizontal layout
+  theme(
+    legend.position = "right",         # Or "bottom" if you want to center it
+    plot.title = element_text(hjust = 0.5)  # Center title
+  )
+
+```
+
+
+```{r}
+# Save it correctly
+ggsave(
+  filename = "figure1_final_rightLeg.tiff",
+  plot = gg_density_final,
+  width = 86*2,
+  height = 86,
+  units = "mm",
+  dpi = 400,
+  device = "tiff"    # <<<<<< just put "tiff" here
+)
+
+```
+
+## 3. Distribution fitting: Finding the parameters of logit-normal distributions that represent the FDA and the In-House data.
+
+### 3.1 Published data for FDA approved compounds: Estimating logit parameters from a vector of quantiles and percentiles.
+
+**Details:**
+
+Function *'twCoefLogitnormN()'* from library *'logitnorm'* allows to
+estimate the coefficients (mu and sigma) of the logit-normal
+distribution that best represents the data at hand from a vector of
+quantiles and percentiles. Those estimated mu and sigma are saved in a
+vector called '*theta*'. Function '*dlogitnorm()*' generates a density
+function from the estimated *mu (theta[1])* and *sigma (theta[2])*. We
+do this for the support x = sequence of equally spaced (0.01) points
+between 0 and 1.
+
+**Instructions:**
+
+Here we define 'x' as our vector of y_max values. The
+'*twCoefLogitnormN()*' allows to choose the quantiles we want to use for
+the estimation.
+
+#### 3.1.1 Estimating mu and sigma (= estimating the logit)
+
+```{r}
+x_fda=y_maxFDA$ymax
+thetaFDA<-twCoefLogitnormN(quant=quantile(x_fda,na.rm = TRUE,probs = c(0.1,0.25,0.5,0.75,0.9)),perc=c(0.1,0.25,0.5,0.75,0.9))
+y_estFDA<- dlogitnorm(x=seq(0,1,by=0.01),mu = thetaFDA[1],sigma = thetaFDA[2])
+print(thetaFDA)
+```
+
+### 3.2 In-House data: Estimating logit parameters from a vector of quantiles and percentiles.
+
+Details and instructions same as above.
+
+#### 3.2.1 Estimating mu and sigma (= estimating the logit)
+
+```{r}
+x_inh=y_maxInH$ymax
+thetaInH<-twCoefLogitnormN(quant=quantile(x_inh,na.rm = TRUE,probs = c(0.1,0.25,0.5,0.75,0.9)),perc=c(0.1,0.25,0.5,0.75,0.9),theta0 = c(mu = -1, sigma = 1))
+y_estInH<- dlogitnorm(x=seq(0,1,by=0.01),mu = thetaInH[1],sigma = thetaInH[2])
+print(thetaInH)
+```
+
+By Phase
+
+```{r}
+estimate_logitnorm <- function(data) {
+  x <- data$ymax
+  theta <- twCoefLogitnormN(
+    quant = quantile(x, na.rm = TRUE, probs = c(0.1, 0.25, 0.5, 0.75, 0.9)),
+    perc = c(0.1, 0.25, 0.5, 0.75, 0.9),
+    theta0 = c(mu = -1, sigma = 1)
+  )
+  
+  # Create estimated density values
+  y_est <- dlogitnorm(x = seq(0, 1, by = 0.01), mu = theta[1], sigma = theta[2])
+  
+  # Return results as a list
+  list(
+    mu = theta[1],
+    sigma = theta[2],
+    y_est = y_est
+  )
+}
+
+# Apply the function phase-wise using dplyr
+thetaInH_phase <- y_maxInH %>%
+  group_by(phase_new) %>%
+  summarise(
+    mu = estimate_logitnorm(cur_data())$mu,
+    sigma = estimate_logitnorm(cur_data())$sigma,
+    y_est = list(estimate_logitnorm(cur_data())$y_est),
+    .groups = "drop"
+  )
+
+# Print the results
+print(thetaInH_phase)
+```
+
+## 4. Simulating profiles
+
+### 4.1 Published data for FDA-approved compounds
+
+#### 4.1.1 Generating the simulated ymax values
+
+**Details:**
+
+The first step is to generate the simulated values for parameter *ymax*.
+This is the only parameter that is not taken from the monkeys. To do
+this, we use function '*rlogitnorm()*' which allows random number
+generation for logit-normal distribution. In particular, we use the
+logit-normal that is generated with the mu and sigma values estimated
+from the FDA data.
+
+We do this for n=10000, meaning we simulate 10000 subjects (Compounds).
+We then save this in a data-frame (*df*) in which we will save the
+simulated values for all the model parameters.
+
+**Instructions:**
+
+Here we have the freedom to change the number of subjects we want to
+simulate. To do this, change the value of variable '*my_n*'
+
+```{r}
+set.seed(123)
+my_n=10000
+
+y_sim_fda<-rlogitnorm(n=my_n,mu=thetaFDA[1],sigma = thetaFDA[2])
+df_fda=data.frame(y_sim=y_sim_fda)
+df_fda$ind<-seq.int(nrow(df_fda))
+```
+
+#### 4.1.2 Generating the simulated values for other parameters,which come from the fitting on the monkey data.
+
+**t_lag**
+
+*log-normal* distribution with:
+
+-   mu=log(13.76)=2.621766, and
+
+-   sigma=1.44
+
+```{r}
+tlag_pop=2.621766
+w_tlag=1.44
+
+df_fda$tlag_sim<-rlnorm(n=my_n,meanlog = tlag_pop,sdlog = w_tlag)
+```
+
+**k_np**
+
+*log-normal* distribution with:
+
+-   mu=log(0.86)=-0.1508229, and
+
+-   sigma=2.08
+
+```{r}
+knp_pop=-0.1508229
+w_knp=1.44
+
+df_fda$knp_sim<-rlnorm(n=my_n,meanlog = knp_pop,sdlog = w_knp)
+```
+
+**b**
+
+*logit-normal* distribution with:
+
+-   mu=logit(0.00019)=-8.568296, and
+
+-   sigma=2.08
+
+```{r}
+b_pop=-8.568296
+w_b=5
+
+df_fda$b_sim=rlogitnorm(n=my_n,mu=b_pop,sigma = w_b)
+```
+
+#### 4.1.3 Generate a profile for each line
+
+**Details:**
+
+The following function *'mod'* defines the model we are using to
+simulate profiles, which coincides with '*model 3*'from the work done
+with the studies on monkeys. The model equation is the following:
+
+$$
+y = y_{max} - (y_{max} - b)*\exp\left(-\frac{k_{np}}{y_{max}}*(t-t_{lag})\right)
+$$
+
+```{r}
+mod=function(t){
+  if (t<tlag) {
+   y=b}
+  else{
+    y=ymax-(ymax-b)*exp(-(knp/ymax)*(t-tlag))
+  }
+}
+
+```
+
+**Details:**
+
+The following *for-loop* generates the '*simulated data-frame*'.
+
+For each subject i, the value of *mod()* is computed for time-points
+equally distributed between 0 and tmax.
+
+The data-frame we need for the visualization is called tmp2. For this,
+we calculate the following for each time-point across simulations:
+
+-   median
+
+-   value at quantile 0.1 and 1-0.1=0.9
+
+-   value at quantile 0.2 and 1-0.2=0.8
+
+-   value at quantile 0.3 and 1-0.3=0.7
+
+-   value at quantile 0.4 and 1-0.4=0.6
+
+**Instructions:**
+
+The number of time-points and the step-size can be set by changing the
+value of variables '*tmax*'and'*step*', respectively.
+
+Here the choice was for Q1=0.1, Q2=0.2, Q3=0.3 and Q4=0.4. Those values
+can be changed by changing the respective variable values.
+
+```{r}
+dflist=list()
+
+tmax=100
+step=1
+
+Q1=0.1
+Q2=0.2
+Q3=0.3
+Q4=0.4
+```
+
+
+```{r}
+i=1
+for (i in 1:my_n){
+  ymax=df_fda$y_sim[i]
+  tlag=df_fda$tlag_sim[i]
+  b=df_fda$b_sim[i]
+  knp=df_fda$knp_sim[i]
+  d=data.frame(y=numeric(),t=integer())
+  t=0
+  test=for(t in seq(0,tmax,by=step)){
+  y=mod(t)
+  d[t+1,]<-c(y,t)
+  t=t+1
+  }
+  d$ind=i
+  dflist[[i]]=d
+  i=i+1
+}
+```
+
+
+```{r}
+df_sim_fda=do.call(rbind,dflist)
+
+df_sim_fda%>%group_by(t)%>%summarise(avg=median(y),q1=quantile(y,probs=Q1),q1bis=quantile(y,probs=(1-Q1)),q2=quantile(y,probs=Q2),q2bis=quantile(y,probs=(1-Q2)),q3=quantile(y,probs=Q3),q3bis=quantile(y,probs=(1-Q3)),q4=quantile(y,probs=Q4),q4bis=quantile(y,probs=(1-Q4)))->tmp2
+```
+
+### 4.2 In-House data
+
+#### 4.1.1 Generating the simulated ymax values and appending columns with the generated values for the other parameters
+
+**Instructions:**
+
+The number of simulated subjects is again controllable with 'my_n2'.
+
+For coherence, it's set to be equal to the one used for FDA data. For
+this, we can directly build the data-frame without again generating
+simulated values for parameters tlag, knp and b.
+
+[*In case my_n2 is different than my_n (meaning we are generating a
+different number of simulated profiles than for the FDA data), don't run
+this chunk! Run the commented one below it!!*]{.underline}
+
+```{r}
+my_n2=10000
+
+y_sim_inh<-rlogitnorm(n=my_n2,mu=thetaInH[1],sigma = thetaInH[2])
+df_inh=data.frame(y_sim=y_sim_inh)
+df_inh$ind<-seq.int(nrow(df_inh))
+head(df_inh)
+df_inh$tlag_sim=df_fda$tlag_sim
+df_inh$b_sim=df_fda$b_sim
+df_inh$knp_sim=df_fda$knp_sim
+
+```
+
+#### 4.2.2 Generate a profile for each line
+
+**Instructions:**
+
+Same as for FDA data.
+
+```{r}
+dflist2=list()
+
+tmax2=100
+step2=1
+
+Q1=0.1
+Q2=0.2
+Q3=0.3
+Q4=0.4
+```
+
+
+```{r}
+i=1
+for (i in 1:my_n2){
+  ymax=df_inh$y_sim[i]
+  tlag=df_inh$tlag_sim[i]
+  b=df_inh$b_sim[i]
+  knp=df_inh$knp_sim[i]
+  d=data.frame(y=numeric(),t=integer())
+  t=0
+  test=for(t in seq(0,tmax2,by=step2)){
+  y=mod(t)
+  d[t+1,]<-c(y,t)
+  t=t+1
+  }
+  d$ind=i
+  dflist2[[i]]=d
+  i=i+1
+}
+```
+
+```{r}
+df_sim_inh=do.call(rbind,dflist2)
+
+df_sim_inh%>%group_by(t)%>%summarise(avg=median(y),q1=quantile(y,probs=Q1),q1bis=quantile(y,probs=(1-Q1)),q2=quantile(y,probs=Q2),q2bis=quantile(y,probs=(1-Q2)),q3=quantile(y,probs=Q3),q3bis=quantile(y,probs=(1-Q3)),q4=quantile(y,probs=Q4),q4bis=quantile(y,probs=(1-Q4)))->tmp3
+```
+
+### 4.2 In-House data by phase
+
+```{r}
+# Number of subjects per phase
+my_n2 <- 10000
+
+# Simulate phase-wise `ymax` and reuse `tlag_sim`, `b_sim`, and `knp_sim`
+simulated_phase_data <- thetaInH_phase %>%
+  rowwise() %>%
+  mutate(
+    simulated_data = list({
+      # Generate random ymax values for the phase
+      y_sim_inh_ph <- rlogitnorm(n = my_n2, mu = mu, sigma = sigma)
+      
+      # Create a data frame for the phase
+      df_phase <- data.frame(
+        y_sim = y_sim_inh_ph,
+        ind = seq.int(my_n2),  # Index for individuals
+        tlag_sim = df_fda$tlag_sim,  # Reuse from FDA
+        b_sim = df_fda$b_sim,        # Reuse from FDA
+        knp_sim = df_fda$knp_sim,    # Reuse from FDA
+        phase_new = phase_new    # Add phase information
+      )
+      df_phase
+    })
+  )
+
+# Combine all simulated data for all phases into one data frame
+df_inh_ph <- do.call(rbind, simulated_phase_data$simulated_data)
+
+# Check the structure
+#head(df_inh_ph)
+
+```
+
+
+```{r}
+# Function to generate profiles for one phase
+simulate_time_phase <- function(df_phase) {
+  dflist2 <- list()  # Store simulations for individuals
+  
+  for (i in 1:nrow(df_phase)) {
+    ymax <- df_phase$y_sim[i]
+    tlag <- df_phase$tlag_sim[i]
+    b <- df_phase$b_sim[i]
+    knp <- df_phase$knp_sim[i]
+    
+    d <- data.frame(y = numeric(), t = integer())  # Empty data frame for individual
+    
+    for (t in seq(0, 100, by = 1)) {  # Simulate for t = 0 to 100 with step = 1
+      # Model equation
+      if (t < tlag) {
+        y <- b
+      } else {
+        y <- ymax - (ymax - b) * exp(-(knp / ymax) * (t - tlag))
+      }
+      d[t + 1, ] <- c(y, t)
+    }
+    
+    d$ind <- i  # Add individual index
+    dflist2[[i]] <- d  # Append to list
+  }
+  
+  # Combine individual simulations for the phase
+  df_sim2 <- do.call(rbind, dflist2)
+  df_sim2$phase_new <- unique(df_phase$phase_new)  # Add phase information
+  return(df_sim2)
+}
+
+# Apply the function to each phase
+df_sim_inh_ph <- df_inh_ph%>%
+  group_by(phase_new) %>%
+  group_split() %>%
+  map_dfr(~ simulate_time_phase(.))
+```
+
+```{r}
+# Summarize phase-wise
+df_sim_inh_ph_summary <- df_sim_inh_ph %>%
+  group_by(phase_new, t) %>%
+  summarise(
+    avg = median(y),
+    q1 = quantile(y, probs = 0.1),
+    q1bis = quantile(y, probs = 0.9),
+    q2 = quantile(y, probs = 0.2),
+    q2bis = quantile(y, probs = 0.8),
+    q3 = quantile(y, probs = 0.3),
+    q3bis = quantile(y, probs = 0.7),
+    q4 = quantile(y, probs = 0.4),
+    q4bis = quantile(y, probs = 0.6),
+    .groups = "drop"
+  )
+
+```
+
+### 4.3 All together
+
+```{r}
+df_fda2=df_fda
+df_fda2$phase_new="FDA"
+df_fda2$ind=seq(1,10000)
+head(df_fda2)
+df_combined=rbind(df_fda2,df_inh_ph)
+```
+
+```{r}
+# Apply the function to each phase
+df_sim_combined <- df_combined %>%
+  group_by(phase_new) %>%
+  group_split() %>%
+  map_dfr(~ simulate_time_phase(.))
+```
+
+
+```{r}
+# Summarize phase-wise
+df_sim_combined_summary <- df_sim_combined %>% 
+  group_by(phase_new, t) %>%
+  summarise(
+    avg = median(y),
+    q1 = quantile(y, probs = 0.1),
+    q1bis = quantile(y, probs = 0.9),
+    q2 = quantile(y, probs = 0.2),
+    q2bis = quantile(y, probs = 0.8),
+    q3 = quantile(y, probs = 0.3),
+    q3bis = quantile(y, probs = 0.7),
+    q4 = quantile(y, probs = 0.4),
+    q4bis = quantile(y, probs = 0.6),
+    .groups = "drop"
+  )
+
+```
+
+
+```{r}
+# Define custom labels for facets
+facet_labels <- c(
+  "PHASE I" = "IN-HOUSE PHASE I",
+  "PHASE II" = "IN-HOUSE PHASE II",
+  "PHASE III" = "IN-HOUSE PHASE III",
+  "FDA" = "APPROVED MABS"
+)
+
+# Ensure phase_new is a factor with the correct levels
+df_sim_combined_summary$phase_new <- factor(
+  df_sim_combined_summary$phase_new,
+  levels = c("PHASE I", "PHASE II", "PHASE III", "FDA")
+)
+
+# Updated Plot
+ggtest <- ggplot(data = df_sim_combined_summary, aes(x = t)) +
+  # Add ribbons for confidence intervals
+  geom_ribbon(aes(ymin = q1, ymax = q1bis, fill = interaction(phase_new, "R1")), alpha = 0.1) +
+  geom_ribbon(aes(ymin = q2, ymax = q2bis, fill = interaction(phase_new, "R2")), alpha = 0.3) +
+  geom_ribbon(aes(ymin = q4, ymax = q4bis, fill = interaction(phase_new, "R4")), alpha = 0.8) +
+  geom_line(aes(y = avg, linetype = 'Median'), linewidth = 0.5, color = 'black') +
+  # Facet with custom labels
+  facet_wrap(
+    ~ phase_new,
+    nrow = 1,
+    labeller = labeller(phase_new = facet_labels)
+  ) +
+  # Manual fill scale for confidence intervals
+  scale_fill_manual(
+    values = c(
+      "PHASE I.R1" = alpha('dodgerblue2', 0.2),
+      "PHASE I.R2" = alpha('dodgerblue2', 0.4),
+      "PHASE I.R4" = alpha('dodgerblue2', 0.8),
+      "PHASE II.R1" = alpha('dodgerblue2', 0.2),
+      "PHASE II.R2" = alpha('dodgerblue2', 0.4),
+      "PHASE II.R4" = alpha('dodgerblue2', 0.8),
+      "PHASE III.R1" = alpha('dodgerblue2', 0.2),
+      "PHASE III.R2" = alpha('dodgerblue2', 0.4),
+      "PHASE III.R4" = alpha('dodgerblue2', 0.8),
+      "FDA.R1" = alpha('violetred', 0.2),
+      "FDA.R2" = alpha('violetred', 0.4),
+      "FDA.R4" = alpha('violetred', 0.8)
+    ),
+    breaks = c("PHASE I.R1", "PHASE I.R2", "PHASE I.R4", "FDA.R1", "FDA.R2", "FDA.R4"),
+    labels = c("","","", R1_label, R2_label, R4_label)
+  ) +
+  scale_linetype_manual(
+    name = NULL,
+    values = c("Median" = "solid"),
+    labels = c("Median")
+  ) +
+  # Add guides to group legend entries
+  guides(
+    fill = guide_legend(
+      override.aes = list(
+        alpha = c(0.2, 0.4, 0.8, 0.2, 0.4, 0.8),
+        fill = c('dodgerblue2', 'dodgerblue2', 'dodgerblue2', 'violetred', 'violetred', 'violetred')
+      ),
+      title = "Confidence intervals (percentile ranges):",
+      ncol = 2,
+      title.position = "top"
+    ),
+    linetype = guide_legend(
+      override.aes = list(color = "black", linewidth = 1),
+      title = NULL
+    )
+  ) +
+  scale_x_continuous(breaks = c(0, 50, 100), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  ylab('ADA-positive ratio') +
+  xlab('time [days]') +
+  theme_bw() +
+  ggtitle('Simulated ADA-Positive Ratio Over Time') +
+  labs(
+    subtitle = 'Confidence intervals reflect variability derived from logit-normal distributions fitted to publicly available data and in-house study data.'
+  ) +
+  theme(
+    axis.text = element_text(size = 7,face='bold'),
+    axis.title = element_text(size = 8,face='bold'),
+    plot.title = element_text(size = 8, face = "bold"),
+    plot.subtitle = element_text(size = 8, color = 'gray38'),
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 7, face = 'bold'),
+    legend.position = "bottom",
+    legend.box = "horizontal",
+    legend.key.size = unit(0.6, "lines"),
+    strip.text = element_text(size = 7, face = "bold"),
+    panel.spacing = unit(0.5, "lines"),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(10, 20, 10, 10),
+    strip.background = element_rect(
+      color = "black", fill = "white"
+    )
+  )
+
+# Plot the refined visualization
+ggtest
+
+```
+
+
+```{r}
+ggsave(
+  filename = "figure2_final_bottomLeg.tiff",
+  plot = ggtest,
+  width = 2*86,
+  height = 96,  # make it taller to preserve readability
+  units = "mm",
+  dpi = 400,
+  device = "tiff"
+)
+```
+
+### Plot for appendix
+
+```{r}
+# Label each dataset
+tmp3$source <- "In-House Overall"
+fda_plot_data <- df_sim_combined_summary %>%
+  filter(phase_new == "FDA") %>%
+  mutate(source = "Approved mAbs")
+
+# Match columns if needed
+combined_df_app <- bind_rows(
+  tmp3 %>% select(t, avg, q1, q1bis, q2, q2bis, q4, q4bis, source),
+  fda_plot_data %>% select(t, avg, q1, q1bis, q2, q2bis, q4, q4bis, source)
+)
+
+```
+```{r}
+combined_df_app$source <- factor(
+  combined_df_app$source,
+  levels = c("In-House Overall","Approved mAbs" )  # Desired order
+)
+```
+```{r}
+combined_df_app$fill_r1 <- interaction(combined_df_app$source, "R1")
+combined_df_app$fill_r2 <- interaction(combined_df_app$source, "R2")
+combined_df_app$fill_r4 <- interaction(combined_df_app$source, "R4")
+
+```
+
+```{r}
+gg_combined_app <- ggplot(data = combined_df_app, aes(x = t)) +
+  geom_ribbon(aes(ymin = q1, ymax = q1bis, fill = fill_r1), alpha = 0.1) +
+  geom_ribbon(aes(ymin = q2, ymax = q2bis, fill = fill_r2), alpha = 0.3) +
+  geom_ribbon(aes(ymin = q4, ymax = q4bis, fill = fill_r4), alpha = 0.8) +
+  geom_line(aes(y = avg, linetype = "Median"), color = "black", linewidth = 0.5) +
+  facet_wrap(~ source, nrow = 1) +
+  
+  scale_fill_manual(
+    values = c(
+      "In-House Overall.R1" = alpha("dodgerblue2", 0.2),
+      "In-House Overall.R2" = alpha("dodgerblue2", 0.4),
+      "In-House Overall.R4" = alpha("dodgerblue2", 0.8),
+      "Approved mAbs.R1" = alpha("violetred", 0.2),
+      "Approved mAbs.R2" = alpha("violetred", 0.4),
+      "Approved mAbs.R4" = alpha("violetred", 0.8)
+    ),
+    breaks = c("In-House Overall.R1", "In-House Overall.R2", "In-House Overall.R4",
+               "Approved mAbs.R1", "Approved mAbs.R2", "Approved mAbs.R4"),
+    labels = c("", "", "", R1_label, R2_label, R4_label)
+  ) +
+  
+  scale_linetype_manual(
+    name = NULL,
+    values = c("Median" = "solid"),
+    labels = c("Median")
+  ) +
+  
+  guides(
+    fill = guide_legend(
+      override.aes = list(
+        alpha = c(0.2, 0.4, 0.8, 0.2, 0.4, 0.8),
+        fill = c("dodgerblue2", "dodgerblue2", "dodgerblue2",
+                 "violetred", "violetred", "violetred")
+      ),
+      title = "Confidence intervals (percentile ranges):",
+      ncol = 2,
+      title.position = "top"
+    ),
+    linetype = guide_legend(
+      override.aes = list(color = "black", linewidth = 1),
+      title = NULL
+    )
+  ) +
+  
+  scale_x_continuous(breaks = c(0, 50, 100), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  ylab("ADA-positive ratio") +
+  xlab("Time [days]") +
+  ggtitle("Simulated ADA-Positive Ratio Over Time for aggregated In-house Studies and FDA-approved compounds.") +
+  labs(
+    subtitle = "Confidence intervals reflect variability derived from logit-normal distributions fitted to FDA-approved and aggregated in-house studies."
+  ) +
+  theme_bw() +
+  theme(
+    axis.text = element_text(size = 7, face = "bold"),
+    axis.title = element_text(size = 8, face = "bold"),
+    plot.title = element_text(size = 8, face = "bold"),
+    plot.subtitle = element_text(size = 8, color = "gray38"),
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 7, face = "bold"),
+    legend.position = "bottom",
+    legend.box = "horizontal",
+    legend.key.size = unit(0.6, "lines"),
+    strip.text = element_text(size = 7, face = "bold"),
+    panel.spacing = unit(0.5, "lines"),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(10, 20, 10, 10),
+    strip.background = element_rect(color = "black", fill = "white")
+  )
+
+gg_combined_app
+
+```
+
+```{r}
+ggsave(
+  filename = "figure2_appendix.tiff",
+  plot = gg_combined_app,
+  width = 86*2,
+  height = 96,  # make it taller to preserve readability
+  units = "mm",
+  dpi = 400,
+  device = "tiff"
+)
+```
+
+```{r}
+# Save it correctly
+ggsave(
+  filename = "figure1_final_rightLeg.tiff",
+  plot = gg_density_final,
+  width = 86*2,
+  height = 86,
+  units = "mm",
+  dpi = 400,
+  device = "tiff"    # <<<<<< just put "tiff" here
+)
+
+```
