@@ -11,7 +11,6 @@ to simulate and visualize how ADA-positivity ratios evolve over time under diffe
 
 ## 📂 Repository Structure
 - `Publication_Bias_Final.Rmd`: Source R Markdown (if added).
-- `data/`: Directory for processed or raw data used in simulations (not uploaded if confidential).
 - `figures/`: Contains exported plots.
 - `README.md`: This file.
 
