@@ -10,7 +10,7 @@ This project demonstrates the impact of publication bias on the modeling of ADA 
 to simulate and visualize how ADA-positivity ratios evolve over time under different assumptions about data transparency.
 
 ## 📂 Repository Structure
-- `Publication_Bias_Final.Rmd`: Source R Markdown (if added).
+- `Publication_Bias_Final.Rmd`: Source R Markdown.
 - `figures/`: Contains exported plots.
 - `README.md`: This file.
 
