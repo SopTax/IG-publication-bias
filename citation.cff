@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it as below."
+title: "Immunogenicity Publication Bias and Its Consequences for Predictive Models: A Call for Transparent Reporting"
+authors:
+  - family-names: Tascedda
+    given-names: Sophie
+  - family-names: Hu
+    given-names: Zicheng
+  - family-names: Grimm
+    given-names: Hans Peter
+  - family-names: Franssen
+    given-names: Linnea C.
+version: 1.0.0
+date-released: 2025-08-28
+repository-code: "https://github.com/SopTax/IG-publication-bias"
+url: "https://github.com/SopTax/IG-publication-bias"
+license: MIT
+keywords:
+  - immunogenicity
+  - publication bias
+  - ADA
+  - monoclonal antibodies
+preferred-citation:
+  type: software
+  authors:
+    - family-names: Tascedda
+      given-names: Sophie
+    - family-names: Hu
+      given-names: Zicheng
+    - family-names: Grimm
+      given-names: Hans Peter
+    - family-names: Franssen
+      given-names: Linnea C.
+  title: "IG Publication Bias (v1.0.0)"
+  year: 2025
