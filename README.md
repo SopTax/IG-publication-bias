@@ -11,6 +11,7 @@ to simulate and visualize how ADA-positivity ratios evolve over time under diffe
 
 ## 📂 Repository Structure
 - `Publication_Bias_Final.Rmd`: Source R Markdown.
+- `data/`: Contains dataset information and related files.
 - `figures/`: Contains exported plots.
 - `README.md`: This file.
 
@@ -25,7 +26,7 @@ to simulate and visualize how ADA-positivity ratios evolve over time under diffe
 ## 🧪 Getting Started
 1. Clone the repo or download the `.Rmd` file and open in RStudio.
 2. Install necessary packages
-3. Run the notebook to setup the model and simulations, and reproduce the figures from the manuscript
+3. Run the notebook to setup the model and simulations. The public data is provided, and you can use your own data for the "in-house" comparison.
 
 ## 📄 License
 
