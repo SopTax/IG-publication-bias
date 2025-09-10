@@ -6,5 +6,6 @@ This repository does not include study data.
 
 The data needs to have the following structure: 
 - One column called _ymax_ which represents ADA positivity rate, and
-- one column with compound names called ID.
+- one column with compound names called _ID_.
+  
 The notebook is written so paths can be edited at the top, and steps for formatting are explained throughout the notebook. 
