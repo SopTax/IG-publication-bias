@@ -1,0 +1,17 @@
+# RStudio user files
+.Rproj.user/
+.Rhistory
+.RData
+
+# Cache / temp
+*_cache/
+*.utf8.md
+*.knit.md
+
+# Data (never commit!)
+data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
