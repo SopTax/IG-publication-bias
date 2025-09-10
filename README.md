@@ -1,7 +1,7 @@
 # IG Publication Bias 
 ## Project Context
 **Immunogenicity Publication Bias and Its Consequences for Predictive Modelling**
-This project accompanies the manuscript "_Immunogenicity Publication Bias and Its Consequences for Predictive Modelling: A Call for Transparent Reporting_". It investigates how publication bias — particularly the underreporting of early-phase clinical trial data with high immunogenicity — skews anti-drug antibody (ADA) incidence data. The R-based simulations in this repository reproduce and extend the findings presented in the paper, including ADA incidence modeling and visualizations across in-house and FDA-approved monoclonal antibody (mAb) datasets. The goal is to promote transparency and improve the reliability of immunogenicity prediction models by providing an openly accessible example.
+This project accompanies the manuscript "_Immunogenicity Publication Bias and Its Consequences for Predictive Modelling: A Call for Transparent Reporting_". It investigates how publication bias — particularly the underreporting of early-phase clinical trial data with high immunogenicity — skews publicaly available anti-drug antibody (ADA) incidence data. The R-based simulations in this repository reproduce and extend the findings presented in the paper, including ADA incidence modeling and visualizations across Roche-internal and FDA-approved monoclonal antibody (mAb) datasets. One goal of this model is to demonstrate the impact of the publication bias on outcomes of predictive models (see publication for results). Another goal is to promote transparency and improve the reliability of immunogenicity prediction models by providing an openly accessible base model that can be further developed.
 
 ## 📘 Summary
 This project demonstrates the impact of publication bias on the modeling of ADA incidence for therapeutic monoclonal antibodies (mAbs). In particular, it compares ADA data from:
@@ -21,7 +21,7 @@ to simulate and visualize how ADA-positivity ratios evolve over time under diffe
 - Comparison of ADA dynamics for:
   - Phase I, II, III Roche-internal data
   - FDA-approved monoclonal antibodies
-  - Merged in-house simulations
+  - Phase-merged in-house simulations
  
 ## 🧪 Getting Started
 1. Clone the repo or download the `.Rmd` file and open in RStudio.
@@ -31,9 +31,9 @@ to simulate and visualize how ADA-positivity ratios evolve over time under diffe
 ## 📄 License
 
 ## 🧠 Authors
-  Sophie Tascedda
-  Zicheng Hu
-  Hans Peter Grimm
+  Sophie Tascedda,
+  Zicheng Hu,
+  Hans Peter Grimm,
   Linnea C. Franssen
 
 ## 📎 Citation
