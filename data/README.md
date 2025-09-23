@@ -1,7 +1,7 @@
 # Data Access
 
 This repository does not include study data.
-- **FDA data:** please supply the Excel file referenced in the notebook at `pathFDA`, which is found in this folder as FDA_data
+- **y_pub_new2:** please supply the Excel file referenced in the notebook at `pathFDA`, which is found in this folder as FDA_data
 - **In-house data:** not publicly shareable. If you have access, place the file locally and set `pathInHouse` in the Rmd. 
 
 The data needs to have the following structure: 
